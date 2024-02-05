@@ -81,8 +81,14 @@ contract Metamorph is ERC721, Ownable {
     }
 
     function mint() public payable {
-        uint16 amount = uint16(msg.value / price);
+        uint64 cost = price;
+        uint16 amount = uint16(msg.value / cost);
+        uint256 spend = cost * amount;
         __mint(msg.sender, amount);
+        if (msg.value > spend) {
+            (bool success,) = payable(msg.sender).call{value: msg.value - spend}("");
+            if (!success) revert TransferFailed();
+        }
     }
 
     function mint(uint16 amount) external payable {
