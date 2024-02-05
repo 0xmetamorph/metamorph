@@ -24,6 +24,7 @@ contract Metamorph is ERC721, Ownable {
     string internal _name;
     string internal _symbol;
     string internal _baseURI;
+    uint16 internal _mintedSupply;
     uint16 public maxSupply;
     uint16 public totalSupply;
     uint64 public immutable price;
@@ -65,18 +66,19 @@ contract Metamorph is ERC721, Ownable {
     }
 
     function __mint(address to, uint16 amount) internal {
+        uint16 currentSupply = _mintedSupply;
         if (!mintActive) revert Locked();
         if (msg.value < price) revert InsufficientPayment();
-        if (totalSupply + amount > maxSupply) revert SupplyCapReached();
-        uint16 tokenId = totalSupply;
+        if (currentSupply + amount > maxSupply) revert SupplyCapReached();
         for (uint16 i; i < amount;) {
             unchecked {
-                _mint(to, ++tokenId);
+                _mint(to, ++currentSupply);
                 ++i;
             }
         }
         unchecked {
             totalSupply += amount;
+            _mintedSupply += amount;
         }
     }
 
@@ -102,6 +104,9 @@ contract Metamorph is ERC721, Ownable {
     function burn(uint256 tokenId) external {
         if (!_isApprovedOrOwner(msg.sender, tokenId)) revert Unauthorized();
         _burn(tokenId);
+        unchecked {
+            totalSupply -= 1;
+        }
     }
 
     function openMint() external onlyOwner {
